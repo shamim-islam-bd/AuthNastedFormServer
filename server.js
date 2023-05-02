@@ -1,17 +1,16 @@
-const express = require("express");
-const bodyParser = require("body-parser");
-const mongoose = require("mongoose");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcrypt");
-const DataModel = require("./models/dataModel");
-const FormModel = require("./models/formModel");
-const User = require("./models/userModel");
-const sendToken = require("./utils/jwtToken");
-const { isAuthentication } = require("./utils/auth");
+import { hash } from "bcrypt";
+import { json, urlencoded } from "body-parser";
+import cors from "cors";
+import express from "express";
+import { connect, set } from "mongoose";
+import { find } from "./models/dataModel";
+import { find as _find, create, findByIdAndUpdate, findOneAndUpdate } from "./models/formModel";
+import User, { findOne } from "./models/userModel";
+import { isAuthentication } from "./utils/auth";
+import sendToken from "./utils/jwtToken";
 const app = express();
-const cors = require("cors");
 
-const cookies = require("cookie-parser");
+import cookies from "cookie-parser";
 
 const port = process.env.PORT || 4001;
 
@@ -19,9 +18,8 @@ const port = process.env.PORT || 4001;
 require("dotenv").config();
 
 // Database connection
-mongoose.set("strictQuery", true);
-mongoose
-  .connect(process.env.MONGO_LOCAL, {
+set("strictQuery", true);
+connect(process.env.MONGO_LOCAL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -29,12 +27,12 @@ mongoose
   .catch((err) => console.log("Database connection error:", err));
 
 // Middleware
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
+app.use(urlencoded({ extended: false }));
+app.use(json());
 app.use(cookies());
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: [ "http://localhost:5173", "http://localhost:4001" ],
     credentials: true,
   })
 );
@@ -63,7 +61,7 @@ app.get("/", (req, res) => {
 // Register a new user
 app.post("/register", async (req, res, next) => {
   const { name, email, password } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await hash(password, 10);
   try {
     const user = new User({
       name,
@@ -89,7 +87,7 @@ app.post("/login", async (req, res, next) => {
     }
 
     // Find the user by email
-    const user = await User.findOne({ email });
+    const user = await findOne({ email });
     // console.log(user);
 
     if (!user) {
@@ -119,13 +117,6 @@ app.post("/login", async (req, res, next) => {
 // LogOut USer...
 app.LogOut = async (req, res, next) => {
   try {
-    // It also works....
-    // if(req.cookie){
-    //     req.cookie("token",null,{
-    //         expires: new Date(Date.now()),
-    //         httpOnly: true,
-    //     });
-    // }
     res.cookie("token", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
@@ -140,34 +131,6 @@ app.LogOut = async (req, res, next) => {
   }
 };
 
-// app.post('/postdata', isAuthentication, async(req, res, next) => {
-//   // console.log("userId", req.user._id);
-//   try {
-//       const user = req.user._id;
-//       const { name, checkbox, sector } = req.body;
-
-//       if (!name || !sector || !checkbox) {
-//           return res.status(400).send('Please enter all fields');
-//       }
-
-//       // find all data if data length is equal to 1 then return show data already exist
-//         const isDataExist = await FormModel.find({user});
-//         if(isDataExist.length === 1){
-//           return res.status(400).send('Data already exist');
-//         } else{
-//           const newOption = await FormModel.create({ name, sector,  checkbox, user});
-//            // console.log("frm backed: ", newOption);
-
-//             res.status(200).json({
-//               newOption,
-//               message: "Data inserted"
-//             })
-//         }
-
-//   } catch (error) {
-//       res.status(500).send(error.message);
-//   }
-// });
 
 app.put("/postdata", isAuthentication, async (req, res, next) => {
   // console.log("userId", req.user._id);
@@ -180,11 +143,11 @@ app.put("/postdata", isAuthentication, async (req, res, next) => {
     }
 
     // find all data if data length is equal to 1 then return show data already exist
-    const isDataExist = await FormModel.find({ user });
+    const isDataExist = await _find({ user });
     // console.log(isDataExist.length);
 
     if (isDataExist.length === 0) {
-      const newOption = await FormModel.create({
+      const newOption = await create({
         name,
         sector,
         checkbox,
@@ -198,7 +161,7 @@ app.put("/postdata", isAuthentication, async (req, res, next) => {
       });
     } else {
       // return res.status(400).send('Data already exist');
-      const updateData = await FormModel.findOneAndUpdate(
+      const updateData = await findOneAndUpdate(
         { user },
         { name, sector, checkbox },
         { new: true }
@@ -218,7 +181,7 @@ app.put("/postdata", isAuthentication, async (req, res, next) => {
 // get selected sector option from database
 app.get("/getdata", async (req, res) => {
   try {
-    const data = await DataModel.find();
+    const data = await find();
     // console.log(data);
     res.send(data);
   } catch (error) {
@@ -236,7 +199,7 @@ app.put("/updatedata/:id", isAuthentication, async (req, res) => {
     } else {
       console.log(req.body);
 
-      const updateData = await FormModel.findByIdAndUpdate(id, {
+      const updateData = await findByIdAndUpdate(id, {
         name,
         sector,
         checkbox,
@@ -258,7 +221,7 @@ app.put("/updatedata/:id", isAuthentication, async (req, res) => {
 // geting formdata from database
 app.get("/getformdata", async (req, res) => {
   try {
-    const data = await FormModel.find();
+    const data = await _find();
     // console.log(data);
     res.send(data);
   } catch (error) {
@@ -269,18 +232,7 @@ app.get("/getformdata", async (req, res) => {
 // get all user data from usermodel
 app.get("/getAllUserdata", async (req, res) => {
   try {
-    const data = await FormModel.find();
-    // console.log(formdata);
-
-    // const matchedData = users.filter((user) => {
-    //   console.log("filer user", user._id);
-    //   return formdata.find((form) => {
-    //     // console.log("form user", form.user);
-    //     return user._id.toString() === form.user.toString();
-    //   });
-    // });
-    // console.log("matchedData", matchedData);
-
+    const data = await _find();
     res.send({
       data,
     });
