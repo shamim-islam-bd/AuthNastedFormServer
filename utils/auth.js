@@ -1,6 +1,6 @@
 
 const jwt = require('jsonwebtoken');
-const User = require('../models/userModel');
+const User = require('../models/userModel').default;
 // const { Error } = require('mongoose');
 
 exports.isAuthentication = async (req, res, next) => {
