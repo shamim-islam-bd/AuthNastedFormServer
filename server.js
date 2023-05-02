@@ -34,10 +34,33 @@ app.use(bodyParser.json());
 app.use(cookies());
 app.use(
   cors({
-    origin: [ "http://localhost:5173", "http://localhost:4001" ],
+    origin: [ "http://localhost:5173", "https://authnastedformapi.onrender.com" ],
     credentials: true,
   })
 );
+
+
+
+
+
+// vercel deploy code
+
+app.use(express.static(path.join(__dirname, "../Client/dist")));
+
+app.get("*", function (_, res) {
+  res.sendFile(
+    path.join(__dirname, "../Client/dist/index.html"),
+    function (err) {
+      if (err) {
+        res.status(500).send(err);
+      }
+    }
+  );
+});
+
+
+
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -56,12 +79,12 @@ app.use(function (req, res, next) {
 });
 
 // Routes
-app.get("/", (req, res) => {
+app.get("/api", (req, res) => {
   res.json({ mgs: "Hello World!" });
 });
 
 // Register a new user
-app.post("/register", async (req, res, next) => {
+app.post("/api/register", async (req, res, next) => {
   const { name, email, password } = req.body;
   const hashedPassword = await bcrypt.hash(password, 10);
   try {
@@ -79,7 +102,7 @@ app.post("/register", async (req, res, next) => {
 });
 
 // Authenticate a user
-app.post("/login", async (req, res, next) => {
+app.post("/api/login", async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
@@ -117,15 +140,8 @@ app.post("/login", async (req, res, next) => {
 });
 
 // LogOut USer...
-app.LogOut = async (req, res, next) => {
+app.LogOut("/api/logout", async (req, res, next) => {
   try {
-    // It also works....
-    // if(req.cookie){
-    //     req.cookie("token",null,{
-    //         expires: new Date(Date.now()),
-    //         httpOnly: true,
-    //     });
-    // }
     res.cookie("token", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
@@ -138,38 +154,10 @@ app.LogOut = async (req, res, next) => {
   } catch (error) {
     res.status(404).json({ error: error.message });
   }
-};
+});
 
-// app.post('/postdata', isAuthentication, async(req, res, next) => {
-//   // console.log("userId", req.user._id);
-//   try {
-//       const user = req.user._id;
-//       const { name, checkbox, sector } = req.body;
 
-//       if (!name || !sector || !checkbox) {
-//           return res.status(400).send('Please enter all fields');
-//       }
-
-//       // find all data if data length is equal to 1 then return show data already exist
-//         const isDataExist = await FormModel.find({user});
-//         if(isDataExist.length === 1){
-//           return res.status(400).send('Data already exist');
-//         } else{
-//           const newOption = await FormModel.create({ name, sector,  checkbox, user});
-//            // console.log("frm backed: ", newOption);
-
-//             res.status(200).json({
-//               newOption,
-//               message: "Data inserted"
-//             })
-//         }
-
-//   } catch (error) {
-//       res.status(500).send(error.message);
-//   }
-// });
-
-app.put("/postdata", isAuthentication, async (req, res, next) => {
+app.put("/api/postdata", isAuthentication, async (req, res, next) => {
   // console.log("userId", req.user._id);
   try {
     const user = req.user._id;
@@ -216,7 +204,7 @@ app.put("/postdata", isAuthentication, async (req, res, next) => {
 });
 
 // get selected sector option from database
-app.get("/getdata", async (req, res) => {
+app.get("/api/getdata", async (req, res) => {
   try {
     const data = await DataModel.find();
     // console.log(data);
@@ -227,7 +215,7 @@ app.get("/getdata", async (req, res) => {
 });
 
 // update user own postdata from database
-app.put("/updatedata/:id", isAuthentication, async (req, res) => {
+app.put("/api/updatedata/:id", isAuthentication, async (req, res) => {
   try {
     const { id } = req.params;
     const { name, sector, checkbox } = req.body;
@@ -256,7 +244,7 @@ app.put("/updatedata/:id", isAuthentication, async (req, res) => {
 });
 
 // geting formdata from database
-app.get("/getformdata", async (req, res) => {
+app.get("/api/getformdata", async (req, res) => {
   try {
     const data = await FormModel.find();
     // console.log(data);
@@ -267,19 +255,9 @@ app.get("/getformdata", async (req, res) => {
 });
 
 // get all user data from usermodel
-app.get("/getAllUserdata", async (req, res) => {
+app.get("/api/getAllUserdata", async (req, res) => {
   try {
     const data = await FormModel.find();
-    // console.log(formdata);
-
-    // const matchedData = users.filter((user) => {
-    //   console.log("filer user", user._id);
-    //   return formdata.find((form) => {
-    //     // console.log("form user", form.user);
-    //     return user._id.toString() === form.user.toString();
-    //   });
-    // });
-    // console.log("matchedData", matchedData);
 
     res.send({
       data,
