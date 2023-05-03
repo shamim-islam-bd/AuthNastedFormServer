@@ -34,32 +34,10 @@ app.use(bodyParser.json());
 app.use(cookies());
 app.use(
   cors({
-    origin: [ "http://localhost:5173", "https://authnastedformapi.onrender.com" ],
+    origin: [ "http://localhost:5173", "http://localhost:4001/api" ],
     credentials: true,
   })
 );
-
-
-
-
-
-// vercel deploy code
-
-app.use(express.static(path.join(__dirname, "../Client/dist")));
-
-app.get("*", function (_, res) {
-  res.sendFile(
-    path.join(__dirname, "../Client/dist/index.html"),
-    function (err) {
-      if (err) {
-        res.status(500).send(err);
-      }
-    }
-  );
-});
-
-
-
 
 
 // Error handling middleware
@@ -69,7 +47,6 @@ app.use((err, req, res, next) => {
 });
 
 app.use(function (req, res, next) {
-  // res.setHeader('Content-Type', 'application/json');
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
     "Access-Control-Allow-Headers",
@@ -140,7 +117,7 @@ app.post("/api/login", async (req, res, next) => {
 });
 
 // LogOut USer...
-app.LogOut("/api/logout", async (req, res, next) => {
+app.post("/api/logout", async (req, res, next) => {
   try {
     res.cookie("token", null, {
       expires: new Date(Date.now()),
@@ -169,7 +146,8 @@ app.put("/api/postdata", isAuthentication, async (req, res, next) => {
 
     // find all data if data length is equal to 1 then return show data already exist
     const isDataExist = await FormModel.find({ user });
-    // console.log(isDataExist.length);
+    console.log(isDataExist.length);
+    console.log("user: ", user);
 
     if (isDataExist.length === 0) {
       const newOption = await FormModel.create({
@@ -215,33 +193,33 @@ app.get("/api/getdata", async (req, res) => {
 });
 
 // update user own postdata from database
-app.put("/api/updatedata/:id", isAuthentication, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, sector, checkbox } = req.body;
-    if (!name || !sector || !checkbox) {
-      return res.status(400).send("Please enter all fields");
-    } else {
-      console.log(req.body);
+// app.put("/api/updatedata/:id", isAuthentication, async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     const { name, sector, checkbox } = req.body;
+//     if (!name || !sector || !checkbox) {
+//       return res.status(400).send("Please enter all fields");
+//     } else {
+//       console.log(req.body);
 
-      const updateData = await FormModel.findByIdAndUpdate(id, {
-        name,
-        sector,
-        checkbox,
-      });
-      // console.log("updateData: ", updateData);
+//       const updateData = await FormModel.findByIdAndUpdate(id, {
+//         name,
+//         sector,
+//         checkbox,
+//       });
+//       // console.log("updateData: ", updateData);
 
-      await updateData.save();
+//       await updateData.save();
 
-      res.status(200).json({
-        updateData,
-        message: "Data updated",
-      });
-    }
-  } catch (error) {
-    res.status(500).send(error.message);
-  }
-});
+//       res.status(200).json({
+//         updateData,
+//         message: "Data updated",
+//       });
+//     }
+//   } catch (error) {
+//     res.status(500).send(error.message);
+//   }
+// });
 
 // geting formdata from database
 app.get("/api/getformdata", async (req, res) => {
