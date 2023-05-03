@@ -21,7 +21,7 @@ require("dotenv").config();
 // Database connection
 mongoose.set("strictQuery", true);
 mongoose
-  .connect(process.env.MONGO_URI, {
+  .connect(process.env.MONGO_LOCAL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -34,7 +34,7 @@ app.use(bodyParser.json());
 app.use(cookies());
 app.use(
   cors({
-    origin: [ "http://localhost:5173", "http://localhost:4001/api" ],
+    origin: [ "https://authmernform.netlify.app", "https://authnastedformapi.onrender.com/api" ],
     credentials: true,
   })
 );
